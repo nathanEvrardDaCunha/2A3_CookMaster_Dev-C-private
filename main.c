@@ -49,53 +49,49 @@ const char* get_weather_description_from_json(json_t *root, size_t index)
 
 void print_json_as_table(json_t *root)
 {
-    if (json_is_object(root)) {
-        // Afficher les clés et valeurs de l'objet JSON
-        printf("| %-30s | %-30s |\n", "Clé", "Valeur");
-        printf("+--------------------------------+--------------------------------+\n");
-        const char *key;
-        json_t *value;
-        json_object_foreach(root, key, value) {
-            printf("| %-30s | ", key);
-            print_json_as_table(value);
+    if (!json_is_object(root)) {
+        printf("La réponse JSON n'est pas un objet.\n");
+        return;
+    }
+
+    printf("|------------------------|------------------------|\n");
+    printf("|          Clé           |         Valeur         |\n");
+    printf("|------------------------|------------------------|\n");
+
+    json_t *value;
+    const char *key;
+    json_object_foreach(root, key, value) {
+        printf("| %22s | ", key);
+
+        if (json_is_string(value)) {
+            printf("%22s |\n", json_string_value(value));
+        }
+        else if (json_is_integer(value)) {
+            printf("%22lld |\n", (long long)json_integer_value(value));
+        }
+        else if (json_is_real(value)) {
+            printf("%22f |\n", json_real_value(value));
+        }
+        else if (json_is_true(value)) {
+            printf("%22s |\n", "true");
+        }
+        else if (json_is_false(value)) {
+            printf("%22s |\n", "false");
+        }
+        else if (json_is_null(value)) {
+            printf("%22s |\n", "null");
+        }
+        else if (json_is_object(value)) {
+            printf("%22s |\n", "[object]");
+        }
+        else if (json_is_array(value)) {
+            printf("%22s |\n", "[array]");
         }
     }
-    else if (json_is_array(root)) {
-        // Afficher les éléments du tableau JSON
-        printf("[");
-        for (size_t i = 0; i < json_array_size(root); i++) {
-            if (i > 0) {
-                printf(", ");
-            }
-            print_json_as_table(json_array_get(root, i));
-        }
-        printf("]");
-    }
-    else if (json_is_string(root)) {
-        // Afficher la chaîne de caractères JSON
-        printf("%s", json_string_value(root));
-    }
-    else if (json_is_integer(root)) {
-        // Afficher l'entier JSON
-        printf("%lld", (long long)json_integer_value(root));
-    }
-    else if (json_is_real(root)) {
-        // Afficher le nombre JSON
-        printf("%.2f", json_real_value(root));
-    }
-    else if (json_is_true(root)) {
-        // Afficher le booléen JSON "true"
-        printf("true");
-    }
-    else if (json_is_false(root)) {
-        // Afficher le booléen JSON "false"
-        printf("false");
-    }
-    else if (json_is_null(root)) {
-        // Afficher la valeur nulle JSON
-        printf("null");
-    }
+
+    printf("|------------------------|------------------------|\n");
 }
+
 
 int main(void)
 {
