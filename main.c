@@ -1,30 +1,47 @@
 #include <stdio.h>
+#include <string.h>
 #include <curl/curl.h>
-#include <jansson.h>
+
+// La fonction de rappel pour écrire les données de réponse
+size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
+{
+    size_t realsize = size * nmemb;
+    char *response_str = (char *)userdata;
+    strcat(response_str, ptr);
+    return realsize;
+}
 
 int main(void)
 {
     CURL *curl;
     CURLcode res;
-    char url[2000];
-    sprintf(url, "https://api.openweathermap.org/data/2.5/weather?lat=44.34&lon=10.99&appid=a55d1a3187441c503ba1f6f5a914b0be");
+    char response_str[4096] = { 0 };
 
+    // Initialiser CURL
     curl = curl_easy_init();
-    if(curl) {
-        //Configure la session pour se connecter à l'url stocké dans url
-        curl_easy_setopt(curl, CURLOPT_URL, url); 
+    if (curl) {
+        // Définir l'URL de la requête
+        curl_easy_setopt(curl, CURLOPT_URL, "https://api.openweathermap.org/data/2.5/weather?lat=44.34&lon=10.99&appid=a55d1a3187441c503ba1f6f5a914b0be");
 
-        //Configure la session CURL pour suivre les redirections HTTP
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        // Définir la fonction de rappel pour écrire les données de réponse
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
 
-        //Configure la session CURL pour utiliser la session fwrite pour écrire les données reçues
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, fwrite);
+        // Passer un pointeur vers la chaîne de réponse comme données utilisateur
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, response_str);
 
-        //Configure la session CURL pour écrire les données reçues sur la sortie standard
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, stdout);
+        // Exécuter la requête
         res = curl_easy_perform(curl);
-        if(res != CURLE_OK)
-            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+
+        // Vérifier les erreurs de CURL
+        if (res != CURLE_OK) {
+            fprintf(stderr, "Erreur lors de la requête CURL: %s\n", curl_easy_strerror(res));
+        }
+        else {
+            // Afficher la réponse de la requête
+            printf("Réponse de la requête : %s\n", response_str);
+        }
+
+        // Libérer CURL
         curl_easy_cleanup(curl);
     }
 
