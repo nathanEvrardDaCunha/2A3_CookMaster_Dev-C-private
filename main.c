@@ -12,41 +12,6 @@ size_t write_callback(char *ptr, size_t size, size_t nmemb, void *userdata)
     return realsize;
 }
 
-// Fonction pour extraire la température à partir de la clé "temp" dans un objet JSON
-double get_temperature_from_json(json_t *root)
-{
-    double temp = 0.0;
-
-    json_t *main_obj = json_object_get(root, "main");
-    if (main_obj && json_is_object(main_obj)) {
-        json_t *temp_obj = json_object_get(main_obj, "temp");
-        if (temp_obj && json_is_number(temp_obj)) {
-            temp = json_number_value(temp_obj);
-        }
-    }
-
-    return temp;
-}
-
-// Fonction pour extraire la description météo à partir d'un index donné dans un tableau JSON
-const char* get_weather_description_from_json(json_t *root, size_t index)
-{
-    const char *description = NULL;
-
-    json_t *weather_arr = json_object_get(root, "weather");
-    if (weather_arr && json_is_array(weather_arr)) {
-        json_t *weather_obj = json_array_get(weather_arr, index);
-        if (weather_obj && json_is_object(weather_obj)) {
-            json_t *description_obj = json_object_get(weather_obj, "description");
-            if (description_obj && json_is_string(description_obj)) {
-                description = json_string_value(description_obj);
-            }
-        }
-    }
-
-    return description;
-}
-
 void print_json_as_table(json_t *root)
 {
     if (!json_is_object(root)) {
@@ -92,6 +57,38 @@ void print_json_as_table(json_t *root)
     printf("|------------------------|------------------------|\n");
 }
 
+json_t *get_value_from_json(json_t *root, const char *key)
+{
+    if (!json_is_object(root)) {
+        fprintf(stderr, "Le JSON fourni n'est pas un objet.\n");
+        return NULL;
+    }
+
+    json_t *value = NULL;
+    const char *obj_key;
+    json_object_foreach(root, obj_key, value) {
+        if (strcmp(key, obj_key) == 0) {
+            return value;
+        }
+        else if (json_is_object(value)) {
+            json_t *inner_value = get_value_from_json(value, key);
+            if (inner_value != NULL) {
+                return inner_value;
+            }
+        }
+        else if (json_is_array(value)) {
+            size_t arr_size = json_array_size(value);
+            for (size_t i = 0; i < arr_size; i++) {
+                json_t *inner_value = get_value_from_json(json_array_get(value, i), key);
+                if (inner_value != NULL) {
+                    return inner_value;
+                }
+            }
+        }
+    }
+
+    return NULL;
+}
 
 int main(void)
 {
@@ -127,13 +124,25 @@ int main(void)
                 printf("La réponse JSON est la suivante :\n");
                 print_json_as_table(root);
 
-                // Extraire la température
-                double temp = get_temperature_from_json(root);
-                printf("La température est de %.2f Kelvin.\n", temp);
+                json_t *temp_value = get_value_from_json(root, "temp");
+                if (temp_value && json_is_number(temp_value)) {
+                    double temp = json_number_value(temp_value);
+                    printf("La température est de %.2f Kelvin.\n", temp);
+                }
+                else {
+                    fprintf(stderr, "La clé 'temp' n'a pas été trouvée ou n'est pas un nombre.\n");
+                }
 
-                // Extraire la description météo
-                const char *description = get_weather_description_from_json(root, 0);
-                printf("La description météo est : %s.\n", description);
+
+                json_t *description_value = get_value_from_json(root, "description");
+                if (description_value && json_is_string(description_value)) {
+                    const char *description = json_string_value(description_value);
+                    printf("La description météo est : %s.\n", description);
+                }
+                else {
+                    fprintf(stderr, "La clé 'description' n'a pas été trouvée ou n'est pas une chaîne de caractères.\n");
+                }
+
 
                 // Libérer l'objet JSON
                 json_decref(root);
