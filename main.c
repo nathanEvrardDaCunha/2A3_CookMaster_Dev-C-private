@@ -92,10 +92,38 @@ void request_api_and_extract_keys(const char *url, const char *keys[], size_t ke
 }
 
 int main(void) {
-    const char *url = "https://api.openweathermap.org/data/2.5/weather?lat=47.34&lon=10.99&appid=a55d1a3187441c503ba1f6f5a914b0be";
-    const char *keys[] = { "timezone", "name", "visibility" };
-    size_t keys_size = sizeof(keys) / sizeof(keys[0]);
-    request_api_and_extract_keys(url, keys, keys_size);
+    printf("\n----------------------------------------------------\n");
+    printf("           Bienvenue dans votre extracteur d'API     \n");
+    printf("----------------------------------------------------\n\n");
+    
+    char url[1024];
+    printf("Veuillez entrer l'URL de l'API :\n");
+    scanf("%1023s", url);
+
+    int keys_size;
+    printf("\nCombien de clés voulez-vous entrer ?\n");
+    scanf("%d", &keys_size);
+
+    char keys[keys_size][256];
+    printf("\nVeuillez entrer les clés une par une :\n");
+    for (int i = 0; i < keys_size; i++) {
+        printf("Clé n°%d : ", i + 1);
+        scanf("%255s", keys[i]);
+    }
+
+    printf("\nTraitement en cours...\n\n");
+
+    const char *keys_ptrs[keys_size];
+    for (int i = 0; i < keys_size; i++) {
+        keys_ptrs[i] = keys[i];
+    }
+
+    request_api_and_extract_keys(url, keys_ptrs, keys_size);
+
+    printf("\nL'extraction des données est terminée. Merci d'avoir utilisé cet extracteur d'API.\n\n");
 
     return 0;
 }
+
+
+
